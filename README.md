@@ -2,8 +2,15 @@
 
 - **Môn học:** Ứng dụng máy tính trong đo lường và điều khiển
 - **Lớp:** EMEA3071E 2
-- **Giảng viên hướng dẫn:** ThS. Hoàng Văn Mạnh
+- **Giảng viên hướng dẫn:** Hoàng Văn Mạnh
 - **Phần cứng:** HLW8032 + ESP32-S3-WROOM-1 (`92.40 × 97.90 mm`), Màn hình TFT **ST7789 2.8 inch** (`50.0 × 86.0 mm`)
+
+## Thành viên Nhóm 13
+| STT | Họ và Tên | MSSV |
+| :-: | :--- | :---: |
+| 1 | Vũ Hữu Hoạt | `23021273` |
+| 2 | Nguyễn Tuấn Sơn | `23021335` |
+| 3 | Nguyễn Văn Thắng | `23021359` |
 
 ---
 
