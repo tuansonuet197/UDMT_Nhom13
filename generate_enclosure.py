@@ -13,13 +13,13 @@ PCB_W = 92.40          # Chiều rộng PCB (Trục X: Trái -> Phải)
 PCB_L = 97.90          # Chiều dài PCB  (Trục Y: Dưới -> Trên)
 PCB_T = 1.60           # Độ dày PCB tiêu chuẩn
 
-# Chuẩn khít rịt theo sai số máy in 0.12mm:
-# Khe hở mỗi cạnh chỉ đúng 0.15mm (0.12mm bù sai số tia nhựa + 0.03mm khe trượt)
-# -> Lòng hộp 92.70 x 98.20 mm ôm khít đét tấm PCB 92.40 x 97.90 mm, không rơ lắc dù 0.1mm!
-TOL_XY    = 0.15
-SNAP_TOL  = 0.12       # Khe hở gờ âm-dương Lego chuẩn theo máy in sai số 0.12mm
-CAVITY_W  = PCB_W + 2 * TOL_XY  # 92.70 mm
-CAVITY_L  = PCB_L + 2 * TOL_XY  # 98.20 mm
+# Dung sai an toàn cho cả sai số máy in 0.12mm lẫn dung sai cắt viền PCB (±0.20mm):
+# -> Lòng hộp 92.90 x 98.40 mm thả PCB 92.40 x 97.90 mm vào êm ái không cần dũa mép,
+#    kết hợp khe Lego 0.18mm đảm bảo sập nắp nhẹ nhàng không bị kích.
+TOL_XY    = 0.25
+SNAP_TOL  = 0.18       # Khe hở gờ âm-dương Lego an toàn khi máy in sai số 0.12mm
+CAVITY_W  = PCB_W + 2 * TOL_XY  # 92.90 mm
+CAVITY_L  = PCB_L + 2 * TOL_XY  # 98.40 mm
 
 # Thành hộp 2.0mm tiết kiệm nhựa, nhưng CHIỀU DỌC (Z) để dư dả cho mối hàn & linh kiện:
 WALL        = 2.0      # Thành dày 2.0mm cứng cáp, tiết kiệm tiền in
@@ -198,9 +198,9 @@ def build_bottom_case():
             m.add_box(sx0, sx1, 0, WALL, z_win_top, Z_SPLIT)
 
     # 4. VÁCH SAU (Y = OUT_L - WALL .. OUT_L) + HỐC BẢO VỆ ĂNG-TEN + 2 CỬA SỔ KHÓA SNAP-FIT CHÌM
-    # 2 Cửa sổ tại Back-Left [6..17] (tránh PS1) và Back-Right [80.5..88.5] (cạnh ăng-ten, tránh trụ góc):
+    # Chừa cột đứng 2.0mm ở [80.5..82.5] cạnh hốc ăng-ten để đỡ thanh cầu cửa sổ b_win2 cực chắc chắn!
     b_win1 = (pcb_x(6.0),  pcb_x(17.0))
-    b_win2 = (pcb_x(80.5), pcb_x(88.5))
+    b_win2 = (pcb_x(82.5), pcb_x(88.5))
     ax1, ax2 = pcb_x(ANT_X1), pcb_x(ANT_X2)
 
     b_spans = [
@@ -283,7 +283,7 @@ def build_top_cover():
     m.add_box(ax2, ax2 + WALL, OUT_L, OUT_L + ant_ext, Z_SPLIT, Z_TOTAL_H)
     m.add_box(ax1 - WALL, ax2 + WALL, OUT_L + ant_ext - WALL, OUT_L + ant_ext, Z_SPLIT, Z_TOTAL_H)
     m.add_box(ax1 - WALL, ax2 + WALL, OUT_L, OUT_L + ant_ext, Z_TOP_IN, Z_TOTAL_H)
-    for tx0, tx1 in [(pcb_x(6.6), pcb_x(16.4)), (pcb_x(81.1), pcb_x(87.9))]:
+    for tx0, tx1 in [(pcb_x(6.6), pcb_x(16.4)), (pcb_x(83.0), pcb_x(88.0))]:
         y_in, y_out, y_tooth = OUT_L - WALL - 1.37, OUT_L - WALL - 0.12, OUT_L - 1.25
         m.add_frustum_y(tx0, tx1, y_in, y_out,   y_in,     y_tooth, 13.7, 14.8)
         m.add_box(tx0, tx1, y_in, y_tooth, 14.8, 16.6)
@@ -323,9 +323,9 @@ def build_top_cover():
     m.add_box(OUT_W - WALL, OUT_W, by2, OUT_L - WALL, Z_LIP_TOP, Z_TOP_IN)
     m.add_box(OUT_W - lip_outer_x0, OUT_W, by2, OUT_L - WALL, Z_SPLIT, Z_LIP_TOP)
 
-    # 5. 4 TRỤ TỲ ĐÈ GIỮ CHẶT 4 GÓC PCB TỪ TRÊN XUỐNG (Khe hở Z chỉ 0.08mm -> ép khít mặt PCB 1.60mm!)
-    z_hold_bot = Z_PCB_TOP + 0.08
-    pillar_s = 4.0
+    # 5. 4 TRỤ TỲ ĐÈ GIỮ CHẶT 4 GÓC PCB TỪ TRÊN XUỐNG (Khe hở Z 0.12mm -> ép chặt PCB, né lưỡi gà Back-Right)
+    z_hold_bot = Z_PCB_TOP + 0.12
+    pillar_s = 3.6
     m.add_box(WALL, WALL + pillar_s, WALL, WALL + pillar_s, z_hold_bot, Z_TOP_IN)
     m.add_box(OUT_W - WALL - pillar_s, OUT_W - WALL, WALL, WALL + pillar_s, z_hold_bot, Z_TOP_IN)
     m.add_box(WALL, WALL + pillar_s, OUT_L - WALL - pillar_s, OUT_L - WALL, z_hold_bot, Z_TOP_IN)
@@ -333,11 +333,20 @@ def build_top_cover():
 
     # 6. MẶT TRÊN NẮP HỘP:
     # - Khoét thông hoàn toàn vùng nút bấm (từ bx1=78.5mm cắt đứt ra tận mép phải OUT_W, không còn thanh che!)
-    # - Khoét khe cắm chân màn hình TFT1 sát mép dưới-phải + Khay gá giữ màn hình ST7735S trên mặt nắp!
+    # - Khoét khe cắm chân màn hình TFT1 sát mép dưới-phải
+    # - KHOÉT THÊM KHE LUỒN CHÂN & DÂY MÀN HÌNH ST7789 2.8" ngay dưới đáy khay màn hình (X=30..70mm, Y=7.5..19.0mm)!
     bx1 = pcb_x(BTN_OPEN_X1)
     tft_slot_x1 = pcb_x(84.5)
-    # Phần mặt nắp bên trái (từ 0 đến bx1): kín phẳng 100%
-    m.add_box(0, bx1, 0, OUT_L, Z_TOP_IN, Z_TOTAL_H)
+    scr_wx0, scr_wx1 = pcb_x(30.0), pcb_x(70.0)
+    scr_wy0, scr_wy1 = pcb_y(7.5),  pcb_y(19.0)
+
+    # Mảnh trái từ 0 -> scr_wx0 (kín toàn bộ chiều Y):
+    m.add_box(0, scr_wx0, 0, OUT_L, Z_TOP_IN, Z_TOTAL_H)
+    # Mảnh giữa từ scr_wx0 -> scr_wx1 (chừa khe luồn chân & dây ST7789 tại Y=7.5..19.0mm):
+    m.add_box(scr_wx0, scr_wx1, 0, scr_wy0, Z_TOP_IN, Z_TOTAL_H)
+    m.add_box(scr_wx0, scr_wx1, scr_wy1, OUT_L, Z_TOP_IN, Z_TOTAL_H)
+    # Mảnh từ scr_wx1 -> bx1 (kín toàn bộ chiều Y):
+    m.add_box(scr_wx1, bx1, 0, OUT_L, Z_TOP_IN, Z_TOTAL_H)
     # Phần mặt nắp từ bx1 đến tft_slot_x1 (ngoài vùng nút bấm by1..by2):
     m.add_box(bx1, tft_slot_x1, 0, by1, Z_TOP_IN, Z_TOTAL_H)
     m.add_box(bx1, OUT_W, by2, OUT_L, Z_TOP_IN, Z_TOTAL_H)
@@ -345,10 +354,10 @@ def build_top_cover():
     m.add_box(tft_slot_x1, OUT_W, 0, t_y1, Z_TOP_IN, Z_TOTAL_H)
     m.add_box(tft_slot_x1, OUT_W, t_y2, by1, Z_TOP_IN, Z_TOTAL_H)
 
-    # 7. KHUNG ĐẾ GÁ MÀN HÌNH TFT ST7789 2.8 INCH (Kích thước PCB chuẩn: 50.0 x 86.0 mm, lòng khay: 50.4 x 86.4 mm):
-    tft_x0, tft_x1 = pcb_x(24.0), pcb_x(74.4)   # Rộng 50.4 mm (cho màn ST7789 2.8" rộng 50.0 mm)
-    tft_y0, tft_y1 = pcb_y(5.5),  pcb_y(91.9)   # Dài 86.4 mm  (cho màn ST7789 2.8" dài 86.0 mm)
-    rw, rh, rl = 1.8, 3.0, 12.0
+    # 7. KHUNG ĐẾ GÁ MÀN HÌNH TFT ST7789 2.8 INCH (Kích thước PCB chuẩn: 50.0 x 86.0 mm, lòng khay: 50.6 x 86.6 mm):
+    tft_x0, tft_x1 = pcb_x(23.9), pcb_x(74.5)   # Rộng 50.6 mm (cho màn ST7789 2.8" rộng 50.0 mm)
+    tft_y0, tft_y1 = pcb_y(5.4),  pcb_y(92.0)   # Dài 86.6 mm  (cho màn ST7789 2.8" dài 86.0 mm)
+    rw, rh, rl = 1.8, 2.4, 12.0
     # 4 Gờ góc chữ L giữ chặt bo màn hình lớn ST7789 2.8 inch (50x86mm) trên mặt nắp hộp:
     m.add_box(tft_x0 - rw, tft_x0, tft_y0 - rw, tft_y0 + rl, Z_TOTAL_H, Z_TOTAL_H + rh)
     m.add_box(tft_x0 - rw, tft_x0 + rl, tft_y0 - rw, tft_y0, Z_TOTAL_H, Z_TOTAL_H + rh)
