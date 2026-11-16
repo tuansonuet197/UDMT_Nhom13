@@ -1,5 +1,6 @@
-# Không up file xem 3D HTML và ảnh Blueprint
+# Không up file xem 3D HTML, Video mô phỏng và ảnh Blueprint
 *.html
+*.mp4
 *Blueprint*.png
 3D_Enclosure_HLW8032/3_Button_Caps_RESET_BOOT.stl
 __pycache__/
