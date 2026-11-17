@@ -15,15 +15,15 @@
 ---
 
 ## Danh sách file in 3D Vỏ Hộp (`3D_Enclosure_HLW8032/`)
-Thiết kế vỏ hộp 3D lắp ghép khớp **Lego (Snap-Fit)** không cần ốc vít:
-- `1_Enclosure_Bottom_Case.stl` — Đáy hộp (có gờ bậc thang đỡ PCB cao `5.5 mm`, mở hở toàn khoang đấu dây `J4/J5` bên trái & `TFT1/UART0/UART2/RESET1/BOOT1` bên phải, mặt sau phẳng vuông vức vì module `ESP32-S3-WROOM-1` nằm trọn trong bo PCB).
-- `2_Enclosure_Top_Cover.stl` — Nắp hộp trên (4 lưỡi gà Snap-Fit cửa sổ chìm chống gãy, 4 trụ đè giữ chặt 4 góc PCB, mở thông 2 khoang đấu dây & bấm nút hai bên, **đục sẵn 4 trụ bắt vít M2.5/M3 tâm `44.6 × 76.0 mm` cao `3.5 mm`** + khe luồn 14 chân màn hình `2.8"`).
+Thiết kế vỏ hộp 3D khóa bằng **4 ốc vít M3 ở 4 tai góc** (tỷ lệ in thành công 100%, không dùng ngàm dễ gãy):
+- `1_Enclosure_Bottom_Case.stl` — Đáy hộp (có gờ bậc thang đỡ PCB cao `5.5 mm`, 4 tai bắt ốc M3 trước/sau, mở hở toàn khoang đấu dây `J4/J5` trái & `TFT1/UART0/UART2/RESET1/BOOT1` phải, mặt sau phẳng vuông vức).
+- `2_Enclosure_Top_Cover.stl` — Nắp hộp trên (4 tai bắt ốc M3 đồng tâm, gờ định tâm trượt êm, 4 trụ đè giữ chặt 4 góc PCB, **đục sẵn 4 trụ bắt vít M2.5/M3 tâm `44.6 × 76.0 mm` cao `3.5 mm`** + khe luồn 14 chân màn hình `2.8"`).
 - `4_Full_Assembly_Preview.stl` — Bản ghép tổng thể Đáy + Nắp để kiểm tra trước khi in.
 - `5_Enclosure_Parametric.scad` — File nguồn tham số OpenSCAD.
 
-## Thông số in 3D khuyến nghị
+## Thông số in 3D & Lắp ráp khuyến nghị
 - **Nhựa:** PLA+ hoặc PETG
 - **Chiều cao lớp (Layer Height):** `0.20 mm` (Nozzle `0.4 mm`)
 - **Infill:** `15% – 20%` (Grid / Gyroid)
-- **Dung sai thiết kế:** Khe kẹp PCB `+0.25 mm` mỗi cạnh, khớp Lego `0.18 mm`.
-- **Khối lượng ước tính:** ~`48 – 51 gram` cho cả bộ Đáy + Nắp.
+- **Ốc vít lắp ráp:** Dùng **4 bu-lông `M3 × 35mm` hoặc `M3 × 40mm` + 4 đai ốc M3** xỏ qua 4 tai ngoài ở mặt trước & sau; **4 vít `M2.5 / M3 × 6–8mm`** cho màn hình `2.8"`.
+- **Khối lượng ước tính:** ~`57 – 60 gram` cho cả bộ Đáy + Nắp.

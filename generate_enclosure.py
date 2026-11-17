@@ -17,7 +17,7 @@ PCB_T = 1.60           # Độ dày PCB tiêu chuẩn
 # -> Lòng hộp 92.90 x 98.40 mm thả PCB 92.40 x 97.90 mm vào êm ái không cần dũa mép,
 #    kết hợp khe Lego 0.18mm đảm bảo sập nắp nhẹ nhàng không bị kích.
 TOL_XY    = 0.25
-SNAP_TOL  = 0.18       # Khe hở gờ âm-dương Lego an toàn khi máy in sai số 0.12mm
+SNAP_TOL  = 0.20       # Khe hở gờ định tâm giữa Nắp và Đáy (trượt êm không cần lực vì đã siết 4 ốc M3!)
 CAVITY_W  = PCB_W + 2 * TOL_XY  # 92.90 mm
 CAVITY_L  = PCB_L + 2 * TOL_XY  # 98.40 mm
 
@@ -33,7 +33,7 @@ Z_FLOOR_TOP = FLOOR_T                           # 1.80 mm
 Z_PCB_BOT   = Z_FLOOR_TOP + UNDER_PCB_H         # 7.30 mm (mặt bậc đỡ PCB)
 Z_PCB_TOP   = Z_PCB_BOT + PCB_T                 # 8.90 mm (mặt trên PCB)
 Z_SPLIT     = Z_PCB_TOP + 10.5                  # 19.40 mm (mặt phân khuôn giữa Đáy và Nắp)
-Z_LIP_TOP   = Z_SPLIT + 2.4                     # 21.80 mm (đỉnh gờ dương Lego của Đáy hộp)
+Z_LIP_TOP   = Z_SPLIT + 2.0                     # 21.40 mm (gờ định tâm cao 2.0mm chống trượt ngang)
 Z_TOP_IN    = Z_PCB_TOP + ABOVE_PCB_H           # 31.40 mm (mặt trần trong của Nắp)
 Z_TOTAL_H   = Z_TOP_IN + ROOF_T                 # 33.20 mm (tổng chiều cao toàn bộ hộp)
 
@@ -220,52 +220,30 @@ def build_bottom_case():
     m.add_box(WALL, WALL + ledge_w, pcb_y(41.5), pcb_y(55.5), Z_FLOOR_TOP, Z_PCB_BOT)
     m.add_box(pcb_x(30.0), pcb_x(62.0), WALL, WALL + ledge_w, Z_FLOOR_TOP, Z_PCB_BOT)
 
-    # 3. VÁCH TRƯỚC (Y = 0..WALL) + GỜ DƯƠNG LEGO + 2 CỬA SỔ KHÓA SNAP-FIT CHÌM (CHỐNG GÃY)
-    # 2 Cửa sổ chữ nhật tại X=[5..16] và [68..79] (rộng 11mm, cao 3.9mm: Z=13.5..17.4mm -> bao trọn vấu gài):
-    f_win1 = (pcb_x(5.0), pcb_x(16.0))
-    f_win2 = (pcb_x(68.0), pcb_x(79.0))
-    z_win_bot, z_win_top = 13.5, 17.4
-    lip_t = 0.82
+    # 3. VÁCH TRƯỚC & VÁCH SAU PHẲNG LIỀN MẠCH 100% + GỜ ĐỊNH TÂM DỄ LẮP (KHÔNG DÙNG NGÀM NHỰA DỄ GÃY)
+    lip_t = 0.80
+    m.add_box(0, OUT_W, 0, WALL, Z_FLOOR_TOP, Z_SPLIT)
+    m.add_box(WALL, OUT_W - WALL, WALL - lip_t, WALL, Z_SPLIT, Z_LIP_TOP)
 
-    f_spans = [
-        (0.0,       f_win1[0], True),
-        (f_win1[0], f_win1[1], False),
-        (f_win1[1], f_win2[0], True),
-        (f_win2[0], f_win2[1], False),
-        (f_win2[1], OUT_W,     True),
+    m.add_box(0, OUT_W, OUT_L - WALL, OUT_L, Z_FLOOR_TOP, Z_SPLIT)
+    m.add_box(WALL, OUT_W - WALL, OUT_L - WALL, OUT_L - WALL + lip_t, Z_SPLIT, Z_LIP_TOP)
+
+    # 4 TAI BẮT VÍT M3 Ở 4 GÓC PHÍA TRƯỚC & SAU (CHẮC CHẮN 100%, IN KHÔNG BAO GIỜ FAIL):
+    # Đặt ở X = 8.0mm và 84.4mm (cách PCB/tụ hoàn toàn, mở hở 2 hông thoải mái), lỗ Ø3.4mm xỏ ốc M3x35/40mm + tán M3!
+    ear_r = 4.8
+    ear_cy_off = 4.4
+    screw_lugs = [
+        (pcb_x(8.0),  -ear_cy_off, True),
+        (pcb_x(84.4), -ear_cy_off, True),
+        (pcb_x(8.0),  OUT_L + ear_cy_off, False),
+        (pcb_x(84.4), OUT_L + ear_cy_off, False),
     ]
-    for sx0, sx1, is_solid in f_spans:
-        if is_solid:
-            m.add_box(sx0, sx1, 0, WALL, Z_FLOOR_TOP, Z_SPLIT)
-            lx0, lx1 = max(sx0, WALL), min(sx1, OUT_W - WALL)
-            if lx1 > lx0:
-                m.add_box(lx0, lx1, WALL - lip_t, WALL, Z_SPLIT, Z_LIP_TOP)
-        else:
-            m.add_box(sx0, sx1, 0, WALL, Z_FLOOR_TOP, z_win_bot)
-            # Thanh cầu ngang khóa ngàm ở phía trên cửa sổ (Z = 17.4 .. 19.4 mm):
-            m.add_box(sx0, sx1, 0, WALL, z_win_top, Z_SPLIT)
-
-    # 4. VÁCH SAU (Y = OUT_L - WALL .. OUT_L) PHẲNG ĐẸP + GỜ DƯƠNG LEGO + 2 CỬA SỔ KHÓA SNAP-FIT CHÌM
-    # (Module ESP32-S3-WROOM-1 dài 25.5mm nằm trọn bên trong mép bo PCB 97.90mm nên KHÔNG cần hốc lồi phía sau!)
-    b_win1 = (pcb_x(6.0),  pcb_x(17.0))
-    b_win2 = (pcb_x(81.0), pcb_x(88.5))
-
-    b_spans = [
-        (0.0,       b_win1[0], True),
-        (b_win1[0], b_win1[1], False),
-        (b_win1[1], b_win2[0], True),
-        (b_win2[0], b_win2[1], False),
-        (b_win2[1], OUT_W,     True),
-    ]
-    for sx0, sx1, is_solid in b_spans:
-        if is_solid:
-            m.add_box(sx0, sx1, OUT_L - WALL, OUT_L, Z_FLOOR_TOP, Z_SPLIT)
-            lx0, lx1 = max(sx0, WALL), min(sx1, OUT_W - WALL)
-            if lx1 > lx0:
-                m.add_box(lx0, lx1, OUT_L - WALL, OUT_L - WALL + lip_t, Z_SPLIT, Z_LIP_TOP)
-        else:
-            m.add_box(sx0, sx1, OUT_L - WALL, OUT_L, Z_FLOOR_TOP, z_win_bot)
-            m.add_box(sx0, sx1, OUT_L - WALL, OUT_L, z_win_top, Z_SPLIT)
+    for lx, ly, is_front in screw_lugs:
+        m.add_cylinder(lx, ly, ear_r, 1.70, 0.0, Z_SPLIT, segs=28)
+        y_n0, y_n1 = (ly, 0.0) if is_front else (OUT_L, ly)
+        # Cổ nối 2 bên tăng cứng (không che lỗ vít r=1.70):
+        m.add_box(lx - ear_r, lx - 1.9, y_n0, y_n1, 0.0, Z_SPLIT)
+        m.add_box(lx + 1.9,   lx + ear_r, y_n0, y_n1, 0.0, Z_SPLIT)
 
     # 5. VÁCH TRÁI (X = 0..WALL) - Mở hở toàn bộ dải giữa cho J4 & J5 (Y = 10.5 .. 81.5mm) hạ phẳng xuống mặt PCB!
     # Chỉ giữ lại 2 trụ góc Trước-Trái và Sau-Trái + gờ Lego để khóa cứng hộp và giữ cạnh trái PCB.
@@ -294,30 +272,29 @@ def build_bottom_case():
 
 def build_top_cover():
     m = MeshBuilder()
-    lip_outer_x0 = WALL - 0.82 - SNAP_TOL  # Rãnh âm chụp ra ngoài gờ dương Lego (dày 1.00mm, khe hở 0.18mm)
+    lip_outer_x0 = WALL - 0.80 - SNAP_TOL  # Rãnh định tâm (dày 1.00mm, khe hở trượt êm 0.20mm)
 
-    # 1. VÁCH TRƯỚC NẮP HỘP + RÃNH ÂM LEGO + 2 LƯỠI GÀ SNAP-FIT DÀI 15.6mm (BIẾN DẠNG CHỈ 0.67% - BỀN VĨNH VIỄN TRÊN PLA)
+    # 1. VÁCH TRƯỚC & VÁCH SAU NẮP HỘP PHẲNG KÍN + 4 TAI BẮT ỐC M3 Ở 4 GÓC
     m.add_box(0, OUT_W, 0, WALL, Z_LIP_TOP, Z_TOP_IN)
     m.add_box(0, OUT_W, 0, lip_outer_x0, Z_SPLIT, Z_LIP_TOP)
-    for tx0, tx1 in [(pcb_x(5.6), pcb_x(15.4)), (pcb_x(68.6), pcb_x(78.4))]:
-        # Lưỡi gà đàn hồi liền khối dài L=15.6mm (biến dạng chỉ 0.67%, nằm gọn 100% trong cửa sổ Z=13.5..17.4mm không cấn đáy):
-        y_out, y_in, y_tooth = WALL + 0.12, WALL + 1.37, 1.25
-        m.add_frustum_y(tx0, tx1, y_out,   y_in, y_tooth, y_in, 14.0, 14.9)    # Mũi vát 40° dẫn hướng trượt êm vào khe
-        m.add_box(tx0, tx1, y_tooth, y_in, 14.9, 16.5)                        # Vấu gài ngậm sâu 0.75mm trong cửa sổ
-        m.add_frustum_y(tx0, tx1, y_tooth, y_in, y_out,   y_in, 16.5, 17.25)   # Vai khóa vát 48° (chừa 0.15mm khe hở dưới cầu)
-        m.add_box(tx0, tx1, y_out,   y_in, 17.25, 29.8)                       # Thân lò xo đàn hồi dài 12.55mm
-        m.add_frustum_y(tx0, tx1, y_out,   y_in, y_out, y_in + 1.0, 29.8, Z_TOP_IN) # Gân vát chân chống gãy gốc
 
-    # 2. VÁCH SAU NẮP HỘP PHẲNG ĐẸP + RÃNH ÂM LEGO + 2 LƯỠI GÀ SNAP-FIT DÀI 15.6mm
     m.add_box(0, OUT_W, OUT_L - WALL, OUT_L, Z_LIP_TOP, Z_TOP_IN)
     m.add_box(0, OUT_W, OUT_L - lip_outer_x0, OUT_L, Z_SPLIT, Z_LIP_TOP)
-    for tx0, tx1 in [(pcb_x(6.6), pcb_x(16.4)), (pcb_x(81.5), pcb_x(88.0))]:
-        y_in, y_out, y_tooth = OUT_L - WALL - 1.37, OUT_L - WALL - 0.12, OUT_L - 1.25
-        m.add_frustum_y(tx0, tx1, y_in, y_out,   y_in,     y_tooth, 14.0, 14.9)
-        m.add_box(tx0, tx1, y_in, y_tooth, 14.9, 16.5)
-        m.add_frustum_y(tx0, tx1, y_in, y_tooth, y_in,     y_out,   16.5, 17.25)
-        m.add_box(tx0, tx1, y_in, y_out, 17.25, 29.8)
-        m.add_frustum_y(tx0, tx1, y_in, y_out,   y_in - 1.0, y_out, 29.8, Z_TOP_IN)
+
+    # 4 TAI BẮT ỐC M3 TRÊN NẮP HỘP (Thẳng hàng 100% với 4 tai đáy hộp, lỗ Ø3.4mm xuyên suốt Z_SPLIT..Z_TOTAL_H):
+    ear_r = 4.8
+    ear_cy_off = 4.4
+    screw_lugs = [
+        (pcb_x(8.0),  -ear_cy_off, True),
+        (pcb_x(84.4), -ear_cy_off, True),
+        (pcb_x(8.0),  OUT_L + ear_cy_off, False),
+        (pcb_x(84.4), OUT_L + ear_cy_off, False),
+    ]
+    for lx, ly, is_front in screw_lugs:
+        m.add_cylinder(lx, ly, ear_r, 1.70, Z_SPLIT, Z_TOTAL_H, segs=28)
+        y_n0, y_n1 = (ly, 0.0) if is_front else (OUT_L, ly)
+        m.add_box(lx - ear_r, lx - 1.9, y_n0, y_n1, Z_SPLIT, Z_TOTAL_H)
+        m.add_box(lx + 1.9,   lx + ear_r, y_n0, y_n1, Z_SPLIT, Z_TOTAL_H)
 
     # 3. VÁCH TRÁI NẮP HỘP - Mở hở toàn bộ dải giữa cho J4 & J5 (Y = 10.5 .. 81.5mm), chỉ giữ 2 trụ góc Trước-Trái & Sau-Trái!
     j4_y1, j4_y2 = pcb_y(J4_Y1), pcb_y(J4_Y2)
@@ -511,7 +488,7 @@ ax2 = fig.add_subplot(2, 2, 2, projection='3d', facecolor='#0F172A')
 draw_mesh_on_ax(ax2, bot, '#38BDF8', alpha=0.85, edge_color='#0369A1', z_offset=0)
 draw_pcb_on_ax(ax2, z_offset=0)
 ax2.view_init(elev=38, azim=-35)
-ax2.set_title("2. ĐÁY HỘP ÔM KHÍT PCB (92.90 × 98.40 mm) & GỜ BẬC THANG 5.5mm\n4 Cửa sổ khóa chìm Snap-Fit chống gãy (biến dạng 0.67%)", color='white', fontsize=11.5, fontweight='bold', pad=10)
+ax2.set_title("2. ĐÁY HỘP KÈM 4 TAI ỐC M3 + GỜ BẬC THANG 5.5mm\nThả PCB vừa khít — Bỏ ngàm dễ gãy, siết 4 ốc M3 chắc 100%", color='white', fontsize=11.5, fontweight='bold', pad=10)
 
 # Góc nhìn 3: Mặt Trên Nắp Hộp (4 lỗ bắt vít + khe luồn 14 chân)
 ax3 = fig.add_subplot(2, 2, 3, projection='3d', facecolor='#0F172A')
