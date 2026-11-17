@@ -288,16 +288,14 @@ def build_bottom_case():
     m.add_box(WALL - lip_t, WALL, j5_y2, OUT_L - WALL, Z_SPLIT, Z_LIP_TOP)
 
     # 6. VÁCH PHẢI (X = OUT_W - WALL .. OUT_W)
-    # Cắt hạ sát mặt PCB tại TFT1, UART2, UART0 VÀ cắt bỏ hoàn toàn vách chắn chỗ 2 nút RESET1/BOOT1 (by1..by2)!
+    # Mở hở toàn bộ dải bên phải từ TFT1 -> UART2 -> UART0 -> BOOT1 -> RESET1 (Y = 4.8 .. 89.5mm)
+    # hạ phẳng vách xuống bằng mặt PCB (Z_PCB_TOP) để cắm dây & bấm nút thoải mái 100% không vướng!
     m.add_box(OUT_W - WALL, OUT_W, WALL, OUT_L - WALL, Z_FLOOR_TOP, Z_PCB_TOP)
     t_y1, t_y2 = pcb_y(TFT1_Y1), pcb_y(TFT1_Y2)
     u2_y1, u2_y2 = pcb_y(UART2_Y1), pcb_y(UART2_Y2)
     u0_y1, u0_y2 = pcb_y(UART0_Y1), pcb_y(UART0_Y2)
     by1, by2 = pcb_y(BTN_OPEN_Y1), pcb_y(BTN_OPEN_Y2)
     m.add_box(OUT_W - WALL, OUT_W, WALL, t_y1, Z_PCB_TOP, Z_SPLIT)
-    m.add_box(OUT_W - WALL, OUT_W, t_y2, u2_y1, Z_PCB_TOP, Z_SPLIT)
-    m.add_box(OUT_W - WALL, OUT_W, u2_y2, u0_y1, Z_PCB_TOP, Z_SPLIT)
-    # Đoạn từ u0_y2 (63.8) đến by2 (89.5) được cắt phẳng xuống tận mặt PCB (Z_PCB_TOP) để không che nút bấm!
     m.add_box(OUT_W - WALL, OUT_W, by2, OUT_L - WALL, Z_PCB_TOP, Z_SPLIT)
     m.add_box(OUT_W - WALL, OUT_W - WALL + lip_t, WALL, t_y1, Z_SPLIT, Z_LIP_TOP)
     m.add_box(OUT_W - WALL, OUT_W - WALL + lip_t, by2, OUT_L - WALL, Z_SPLIT, Z_LIP_TOP)
@@ -353,21 +351,12 @@ def build_top_cover():
     m.add_box(0, WALL, j5_y1, j5_y2, z_wire_top, Z_TOP_IN)
 
     # 4. VÁCH PHẢI NẮP HỘP:
-    # - Cửa sổ cho TFT1, UART2, UART0
-    # - CẮT BỎ HOÀN TOÀN thanh chắn bên phải của ô nút bấm (by1..by2) để ngón tay thò ngang vào bấm cực dễ!
-    z_hdr_top = Z_PCB_TOP + 16.0
+    # Bỏ toàn bộ thanh chắn & đà treo giữa TFT1 -> UART2 -> UART0 -> BOOT1 -> RESET1!
+    # Chỉ giữ lại 2 trụ góc Trước-Phải và Sau-Phải để khóa góc hộp & kẹp PCB cực chắc.
     t_y1, t_y2 = pcb_y(TFT1_Y1), pcb_y(TFT1_Y2)
-    u2_y1, u2_y2 = pcb_y(UART2_Y1), pcb_y(UART2_Y2)
-    u0_y1, u0_y2 = pcb_y(UART0_Y1), pcb_y(UART0_Y2)
     by1, by2 = pcb_y(BTN_OPEN_Y1), pcb_y(BTN_OPEN_Y2)
     m.add_box(OUT_W - WALL, OUT_W, WALL, t_y1, Z_LIP_TOP, Z_TOP_IN)
     m.add_box(OUT_W - lip_outer_x0, OUT_W, WALL, t_y1, Z_SPLIT, Z_LIP_TOP)
-    m.add_box(OUT_W - WALL, OUT_W, t_y2, u2_y1, Z_SPLIT, Z_TOP_IN)
-    m.add_box(OUT_W - WALL, OUT_W, u2_y2, u0_y1, Z_SPLIT, Z_TOP_IN)
-    # Chỗ TFT1 (t_y1..t_y2) cũng mở thông lên khe cắm màn hình TFT ST7735S; chỗ UART2/UART0 có đà ngang phía trên:
-    m.add_box(OUT_W - WALL, OUT_W, u2_y1, u2_y2, z_hdr_top, Z_TOP_IN)
-    m.add_box(OUT_W - WALL, OUT_W, u0_y1, by1,   z_hdr_top, Z_TOP_IN)
-    # Từ by1 đến by2: KHÔNG vẽ vách phải (cắt bỏ hoàn toàn cái che nút bấm như ảnh bạn chỉ!)
     m.add_box(OUT_W - WALL, OUT_W, by2, OUT_L - WALL, Z_LIP_TOP, Z_TOP_IN)
     m.add_box(OUT_W - lip_outer_x0, OUT_W, by2, OUT_L - WALL, Z_SPLIT, Z_LIP_TOP)
 
@@ -380,11 +369,9 @@ def build_top_cover():
     m.add_box(OUT_W - WALL - pillar_s, OUT_W - WALL, OUT_L - WALL - pillar_s, OUT_L - WALL, z_hold_bot, Z_TOP_IN)
 
     # 6. MẶT TRÊN NẮP HỘP + 4 LỖ VÍT MÀN HÌNH TFT 2.8" (50.0 x 81.70 mm, tâm lỗ 44.60 x 76.00 mm):
-    # - Khoét thông hoàn toàn vùng nút bấm (X từ 78.5mm ra tận mép phải, Y từ 64.2 đến 89.5mm)
-    # - Khoét khe cắm TFT1 sát mép dưới-phải
+    # - Mở hở TOÀN BỘ khoang bên phải (từ X=80.5mm ra mép phải, Y=4.8..89.5mm) lộ toàn bộ TFT1, UART2, UART0, BOOT1, RESET1!
     # - Khoét khe luồn hàng 14 chân & dây Dupont màn hình 2.8" (X=30.2..66.5mm, Y=6.2..17.5mm)
-    bx1 = pcb_x(BTN_OPEN_X1)
-    tft_slot_x1 = pcb_x(84.5)
+    bx1 = pcb_x(80.5)
     scr_wx0, scr_wx1 = pcb_x(30.2), pcb_x(66.5)
     scr_wy0, scr_wy1 = pcb_y(6.2),  pcb_y(17.5)
 
@@ -406,12 +393,11 @@ def build_top_cover():
         hx_L - hs, hx_L + hs,
         scr_wx0, scr_wx1,
         hx_R - hs, hx_R + hs,
-        bx1, tft_slot_x1, OUT_W
+        bx1, OUT_W
     ])
     r_ys = sorted([
         0.0,
         t_y1, scr_wy0, hy_B - hs, hy_B + hs, scr_wy1,
-        t_y2, by1,
         hy_T - hs, hy_T + hs,
         by2, OUT_L
     ])
@@ -425,16 +411,13 @@ def build_top_cover():
             xm, ym = 0.5*(cx0+cx1), 0.5*(cy0+cy1)
 
             # Bỏ qua các ô khoét hở:
-            # 1) Vùng nút bấm RESET1/BOOT1 cắt đứt ra mép phải:
-            if xm >= bx1 and by1 <= ym <= by2:
+            # 1) Khoang bên phải mở lộ thiên hoàn toàn từ TFT1 qua UART2/UART0 tới RESET1/BOOT1:
+            if xm >= bx1 and t_y1 <= ym <= by2:
                 continue
-            # 2) Khe mép phải sát chân TFT1:
-            if xm >= tft_slot_x1 and t_y1 <= ym <= t_y2:
-                continue
-            # 3) Khe luồn 14 chân & dây màn hình TFT 2.8" ngay dưới đầu header:
+            # 2) Khe luồn 14 chân & dây màn hình TFT 2.8" ngay dưới đầu header:
             if scr_wx0 <= xm <= scr_wx1 and scr_wy0 <= ym <= scr_wy1:
                 continue
-            # 4) 4 Ô chứa lỗ bắt vít màn hình -> vẽ khối vuông có lỗ tròn Ø2.5mm xuyên trần nắp:
+            # 3) 4 Ô chứa lỗ bắt vít màn hình -> vẽ khối vuông có lỗ tròn Ø2.5mm xuyên trần nắp:
             is_hole_cell = False
             for hx, hy in holes:
                 if abs(xm - hx) < hs - 0.1 and abs(ym - hy) < hs - 0.1:
