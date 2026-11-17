@@ -276,15 +276,14 @@ def build_bottom_case():
     m.add_box(ax2, ax2 + WALL, OUT_L, OUT_L + ant_ext, Z_FLOOR_TOP, Z_SPLIT)
     m.add_box(ax1 - WALL, ax2 + WALL, OUT_L + ant_ext - WALL, OUT_L + ant_ext, Z_FLOOR_TOP, Z_SPLIT)
 
-    # 5. VÁCH TRÁI (X = 0..WALL) - Cửa sổ bên hông luồn dây J4 & J5 + Gờ dương Lego
+    # 5. VÁCH TRÁI (X = 0..WALL) - Mở hở toàn bộ dải giữa cho J4 & J5 (Y = 10.5 .. 81.5mm) hạ phẳng xuống mặt PCB!
+    # Chỉ giữ lại 2 trụ góc Trước-Trái và Sau-Trái + gờ Lego để khóa cứng hộp và giữ cạnh trái PCB.
     m.add_box(0, WALL, WALL, OUT_L - WALL, Z_FLOOR_TOP, Z_PCB_TOP)
     j4_y1, j4_y2 = pcb_y(J4_Y1), pcb_y(J4_Y2)
     j5_y1, j5_y2 = pcb_y(J5_Y1), pcb_y(J5_Y2)
     m.add_box(0, WALL, WALL, j4_y1, Z_PCB_TOP, Z_SPLIT)
-    m.add_box(0, WALL, j4_y2, j5_y1, Z_PCB_TOP, Z_SPLIT)
     m.add_box(0, WALL, j5_y2, OUT_L - WALL, Z_PCB_TOP, Z_SPLIT)
     m.add_box(WALL - lip_t, WALL, WALL, j4_y1, Z_SPLIT, Z_LIP_TOP)
-    m.add_box(WALL - lip_t, WALL, j4_y2, j5_y1, Z_SPLIT, Z_LIP_TOP)
     m.add_box(WALL - lip_t, WALL, j5_y2, OUT_L - WALL, Z_SPLIT, Z_LIP_TOP)
 
     # 6. VÁCH PHẢI (X = OUT_W - WALL .. OUT_W)
@@ -337,18 +336,13 @@ def build_top_cover():
         m.add_box(tx0, tx1, y_in, y_out, 17.35, 29.8)
         m.add_frustum_y(tx0, tx1, y_in, y_out,   y_in - 1.0, y_out, 29.8, Z_TOP_IN)
 
-    # 3. VÁCH TRÁI NẮP HỘP (Cửa sổ bên hông cho dây J4/J5 + Rãnh âm Lego)
-    z_wire_top = Z_PCB_TOP + 16.5
+    # 3. VÁCH TRÁI NẮP HỘP - Mở hở toàn bộ dải giữa cho J4 & J5 (Y = 10.5 .. 81.5mm), chỉ giữ 2 trụ góc Trước-Trái & Sau-Trái!
     j4_y1, j4_y2 = pcb_y(J4_Y1), pcb_y(J4_Y2)
     j5_y1, j5_y2 = pcb_y(J5_Y1), pcb_y(J5_Y2)
     m.add_box(0, WALL, WALL, j4_y1, Z_LIP_TOP, Z_TOP_IN)
     m.add_box(0, lip_outer_x0, WALL, j4_y1, Z_SPLIT, Z_LIP_TOP)
-    m.add_box(0, WALL, j4_y2, j5_y1, Z_LIP_TOP, Z_TOP_IN)
-    m.add_box(0, lip_outer_x0, j4_y2, j5_y1, Z_SPLIT, Z_LIP_TOP)
     m.add_box(0, WALL, j5_y2, OUT_L - WALL, Z_LIP_TOP, Z_TOP_IN)
     m.add_box(0, lip_outer_x0, j5_y2, OUT_L - WALL, Z_SPLIT, Z_LIP_TOP)
-    m.add_box(0, WALL, j4_y1, j4_y2, z_wire_top, Z_TOP_IN)
-    m.add_box(0, WALL, j5_y1, j5_y2, z_wire_top, Z_TOP_IN)
 
     # 4. VÁCH PHẢI NẮP HỘP:
     # Bỏ toàn bộ thanh chắn & đà treo giữa TFT1 -> UART2 -> UART0 -> BOOT1 -> RESET1!
@@ -369,8 +363,10 @@ def build_top_cover():
     m.add_box(OUT_W - WALL - pillar_s, OUT_W - WALL, OUT_L - WALL - pillar_s, OUT_L - WALL, z_hold_bot, Z_TOP_IN)
 
     # 6. MẶT TRÊN NẮP HỘP + 4 LỖ VÍT MÀN HÌNH TFT 2.8" (50.0 x 81.70 mm, tâm lỗ 44.60 x 76.00 mm):
-    # - Mở hở TOÀN BỘ khoang bên phải (từ X=80.5mm ra mép phải, Y=4.8..89.5mm) lộ toàn bộ TFT1, UART2, UART0, BOOT1, RESET1!
+    # - Mở hở TOÀN BỘ khoang bên TRÁI (từ X=0..18.5mm, Y=10.5..81.5mm) để đấu dây & vặn vít J4, J5 dễ dàng!
+    # - Mở hở TOÀN BỘ khoang bên PHẢI (từ X=80.5mm..OUT_W, Y=4.8..89.5mm) lộ TFT1, UART2, UART0, BOOT1, RESET1!
     # - Khoét khe luồn hàng 14 chân & dây Dupont màn hình 2.8" (X=30.2..66.5mm, Y=6.2..17.5mm)
+    lx1 = pcb_x(18.5)
     bx1 = pcb_x(80.5)
     scr_wx0, scr_wx1 = pcb_x(30.2), pcb_x(66.5)
     scr_wy0, scr_wy1 = pcb_y(6.2),  pcb_y(17.5)
@@ -389,7 +385,7 @@ def build_top_cover():
     ]
 
     r_xs = sorted([
-        0.0,
+        0.0, lx1,
         hx_L - hs, hx_L + hs,
         scr_wx0, scr_wx1,
         hx_R - hs, hx_R + hs,
@@ -397,8 +393,8 @@ def build_top_cover():
     ])
     r_ys = sorted([
         0.0,
-        t_y1, scr_wy0, hy_B - hs, hy_B + hs, scr_wy1,
-        hy_T - hs, hy_T + hs,
+        t_y1, scr_wy0, hy_B - hs, hy_B + hs, j4_y1, scr_wy1,
+        j5_y2, hy_T - hs, hy_T + hs,
         by2, OUT_L
     ])
 
@@ -411,10 +407,13 @@ def build_top_cover():
             xm, ym = 0.5*(cx0+cx1), 0.5*(cy0+cy1)
 
             # Bỏ qua các ô khoét hở:
-            # 1) Khoang bên phải mở lộ thiên hoàn toàn từ TFT1 qua UART2/UART0 tới RESET1/BOOT1:
+            # 1) Khoang bên TRÁI mở hở hoàn toàn để đấu dây & vặn vít J4, J5:
+            if xm <= lx1 and j4_y1 <= ym <= j5_y2:
+                continue
+            # 2) Khoang bên PHẢI mở lộ thiên hoàn toàn từ TFT1 qua UART2/UART0 tới RESET1/BOOT1:
             if xm >= bx1 and t_y1 <= ym <= by2:
                 continue
-            # 2) Khe luồn 14 chân & dây màn hình TFT 2.8" ngay dưới đầu header:
+            # 3) Khe luồn 14 chân & dây màn hình TFT 2.8" ngay dưới đầu header:
             if scr_wx0 <= xm <= scr_wx1 and scr_wy0 <= ym <= scr_wy1:
                 continue
             # 3) 4 Ô chứa lỗ bắt vít màn hình -> vẽ khối vuông có lỗ tròn Ø2.5mm xuyên trần nắp:
