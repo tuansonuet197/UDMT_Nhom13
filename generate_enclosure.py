@@ -245,17 +245,15 @@ def build_bottom_case():
             # Thanh cầu ngang khóa ngàm ở phía trên cửa sổ (Z = 17.4 .. 19.4 mm):
             m.add_box(sx0, sx1, 0, WALL, z_win_top, Z_SPLIT)
 
-    # 4. VÁCH SAU (Y = OUT_L - WALL .. OUT_L) + HỐC BẢO VỆ ĂNG-TEN + 2 CỬA SỔ KHÓA SNAP-FIT CHÌM
-    # Chừa cột đứng 2.0mm ở [80.5..82.5] cạnh hốc ăng-ten để đỡ thanh cầu cửa sổ b_win2 cực chắc chắn!
+    # 4. VÁCH SAU (Y = OUT_L - WALL .. OUT_L) PHẲNG ĐẸP + GỜ DƯƠNG LEGO + 2 CỬA SỔ KHÓA SNAP-FIT CHÌM
+    # (Module ESP32-S3-WROOM-1 dài 25.5mm nằm trọn bên trong mép bo PCB 97.90mm nên KHÔNG cần hốc lồi phía sau!)
     b_win1 = (pcb_x(6.0),  pcb_x(17.0))
-    b_win2 = (pcb_x(82.5), pcb_x(88.5))
-    ax1, ax2 = pcb_x(ANT_X1), pcb_x(ANT_X2)
+    b_win2 = (pcb_x(81.0), pcb_x(88.5))
 
     b_spans = [
         (0.0,       b_win1[0], True),
         (b_win1[0], b_win1[1], False),
-        (b_win1[1], ax1,       True),
-        (ax2,       b_win2[0], True),
+        (b_win1[1], b_win2[0], True),
         (b_win2[0], b_win2[1], False),
         (b_win2[1], OUT_W,     True),
     ]
@@ -268,13 +266,6 @@ def build_bottom_case():
         else:
             m.add_box(sx0, sx1, OUT_L - WALL, OUT_L, Z_FLOOR_TOP, z_win_bot)
             m.add_box(sx0, sx1, OUT_L - WALL, OUT_L, z_win_top, Z_SPLIT)
-    m.add_box(ax1, ax2, OUT_L - WALL, OUT_L, Z_FLOOR_TOP, Z_PCB_BOT)
-
-    ant_ext = 6.0
-    m.add_box(ax1 - WALL, ax2 + WALL, OUT_L, OUT_L + ant_ext, 0, Z_FLOOR_TOP)
-    m.add_box(ax1 - WALL, ax1, OUT_L, OUT_L + ant_ext, Z_FLOOR_TOP, Z_SPLIT)
-    m.add_box(ax2, ax2 + WALL, OUT_L, OUT_L + ant_ext, Z_FLOOR_TOP, Z_SPLIT)
-    m.add_box(ax1 - WALL, ax2 + WALL, OUT_L + ant_ext - WALL, OUT_L + ant_ext, Z_FLOOR_TOP, Z_SPLIT)
 
     # 5. VÁCH TRÁI (X = 0..WALL) - Mở hở toàn bộ dải giữa cho J4 & J5 (Y = 10.5 .. 81.5mm) hạ phẳng xuống mặt PCB!
     # Chỉ giữ lại 2 trụ góc Trước-Trái và Sau-Trái + gờ Lego để khóa cứng hộp và giữ cạnh trái PCB.
@@ -317,18 +308,10 @@ def build_top_cover():
         m.add_box(tx0, tx1, y_out,   y_in, 17.35, 29.8)                       # Thân lò xo đàn hồi dài 12.45mm
         m.add_frustum_y(tx0, tx1, y_out,   y_in, y_out, y_in + 1.0, 29.8, Z_TOP_IN) # Gân vát chân chống gãy gốc
 
-    # 2. VÁCH SAU NẮP HỘP + HỐC ĂNG-TEN + 2 LƯỠI GÀ SNAP-FIT DÀI 15.6mm
-    ax1, ax2 = pcb_x(ANT_X1), pcb_x(ANT_X2)
-    ant_ext = 6.0
-    m.add_box(0, ax1, OUT_L - WALL, OUT_L, Z_LIP_TOP, Z_TOP_IN)
-    m.add_box(0, ax1, OUT_L - lip_outer_x0, OUT_L, Z_SPLIT, Z_LIP_TOP)
-    m.add_box(ax2, OUT_W, OUT_L - WALL, OUT_L, Z_LIP_TOP, Z_TOP_IN)
-    m.add_box(ax2, OUT_W, OUT_L - lip_outer_x0, OUT_L, Z_SPLIT, Z_LIP_TOP)
-    m.add_box(ax1 - WALL, ax1, OUT_L, OUT_L + ant_ext, Z_SPLIT, Z_TOTAL_H)
-    m.add_box(ax2, ax2 + WALL, OUT_L, OUT_L + ant_ext, Z_SPLIT, Z_TOTAL_H)
-    m.add_box(ax1 - WALL, ax2 + WALL, OUT_L + ant_ext - WALL, OUT_L + ant_ext, Z_SPLIT, Z_TOTAL_H)
-    m.add_box(ax1 - WALL, ax2 + WALL, OUT_L, OUT_L + ant_ext, Z_TOP_IN, Z_TOTAL_H)
-    for tx0, tx1 in [(pcb_x(6.6), pcb_x(16.4)), (pcb_x(83.0), pcb_x(88.0))]:
+    # 2. VÁCH SAU NẮP HỘP PHẲNG ĐẸP + RÃNH ÂM LEGO + 2 LƯỠI GÀ SNAP-FIT DÀI 15.6mm
+    m.add_box(0, OUT_W, OUT_L - WALL, OUT_L, Z_LIP_TOP, Z_TOP_IN)
+    m.add_box(0, OUT_W, OUT_L - lip_outer_x0, OUT_L, Z_SPLIT, Z_LIP_TOP)
+    for tx0, tx1 in [(pcb_x(6.6), pcb_x(16.4)), (pcb_x(81.5), pcb_x(88.0))]:
         y_in, y_out, y_tooth = OUT_L - WALL - 1.37, OUT_L - WALL - 0.12, OUT_L - 1.25
         m.add_frustum_y(tx0, tx1, y_in, y_out,   y_in,     y_tooth, 13.7, 14.8)
         m.add_box(tx0, tx1, y_in, y_tooth, 14.8, 16.6)
