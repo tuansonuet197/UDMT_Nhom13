@@ -86,6 +86,30 @@ class MeshBuilder:
         self.add_quad(p010, p000, p001, p011)
         self.add_quad(p100, p110, p111, p101)
 
+    def add_square_with_hole(self, cx, cy, half_s, r_hole, z0, z1, segs=32):
+        """Khối vuông [cx±half_s, cy±half_s] có đục lỗ tròn xuyên suốt ở tâm (100% kín STL)."""
+        if z1 <= z0 or half_s <= r_hole:
+            return
+        self.volume_mm3 += ((2*half_s)**2 - np.pi * r_hole**2) * (z1 - z0)
+        angles = np.linspace(0, 2*np.pi, segs+1)
+        c_pts = []
+        s_pts = []
+        for a in angles:
+            ca, sa = np.cos(a), np.sin(a)
+            c_pts.append((cx + r_hole * ca, cy + r_hole * sa))
+            m = max(abs(ca), abs(sa))
+            s_pts.append((cx + half_s * ca / m, cy + half_s * sa / m))
+        for i in range(segs):
+            c0x, c0y = c_pts[i];   c1x, c1y = c_pts[i+1]
+            s0x, s0y = s_pts[i];   s1x, s1y = s_pts[i+1]
+            # Mặt trên (z1) & mặt dưới (z0)
+            self.add_quad((c0x, c0y, z1), (s0x, s0y, z1), (s1x, s1y, z1), (c1x, c1y, z1))
+            self.add_quad((s0x, s0y, z0), (c0x, c0y, z0), (c1x, c1y, z0), (s1x, s1y, z0))
+            # Thành lỗ tròn bên trong
+            self.add_quad((c1x, c1y, z0), (c0x, c0y, z0), (c0x, c0y, z1), (c1x, c1y, z1))
+            # Thành vuông bên ngoài (kết nối khít vào lưới mặt nắp)
+            self.add_quad((s0x, s0y, z0), (s1x, s1y, z0), (s1x, s1y, z1), (s0x, s0y, z1))
+
     def add_frustum_y(self, x0, x1, y0_bot, y1_bot, y0_top, y1_top, z0, z1):
         """Khối lăng trụ vát nghiêng theo trục Y dùng tạo ngàm Snap-Fit vát 45 độ in không cần Support."""
         if x1 <= x0 or z1 <= z0:
@@ -100,6 +124,30 @@ class MeshBuilder:
         self.add_quad(p110, p010, p011, p111)
         self.add_quad(p010, p000, p001, p011)
         self.add_quad(p100, p110, p111, p101)
+
+    def add_square_with_hole(self, cx, cy, half_s, r_hole, z0, z1, segs=32):
+        """Khối vuông [cx±half_s, cy±half_s] có đục lỗ tròn xuyên suốt ở tâm (100% kín STL)."""
+        if z1 <= z0 or half_s <= r_hole:
+            return
+        self.volume_mm3 += ((2*half_s)**2 - np.pi * r_hole**2) * (z1 - z0)
+        angles = np.linspace(0, 2*np.pi, segs+1)
+        c_pts = []
+        s_pts = []
+        for a in angles:
+            ca, sa = np.cos(a), np.sin(a)
+            c_pts.append((cx + r_hole * ca, cy + r_hole * sa))
+            m = max(abs(ca), abs(sa))
+            s_pts.append((cx + half_s * ca / m, cy + half_s * sa / m))
+        for i in range(segs):
+            c0x, c0y = c_pts[i];   c1x, c1y = c_pts[i+1]
+            s0x, s0y = s_pts[i];   s1x, s1y = s_pts[i+1]
+            # Mặt trên (z1) & mặt dưới (z0)
+            self.add_quad((c0x, c0y, z1), (s0x, s0y, z1), (s1x, s1y, z1), (c1x, c1y, z1))
+            self.add_quad((s0x, s0y, z0), (c0x, c0y, z0), (c1x, c1y, z0), (s1x, s1y, z0))
+            # Thành lỗ tròn bên trong
+            self.add_quad((c1x, c1y, z0), (c0x, c0y, z0), (c0x, c0y, z1), (c1x, c1y, z1))
+            # Thành vuông bên ngoài (kết nối khít vào lưới mặt nắp)
+            self.add_quad((s0x, s0y, z0), (s1x, s1y, z0), (s1x, s1y, z1), (s0x, s0y, z1))
 
     def add_cylinder(self, cx, cy, r_out, r_in, z0, z1, segs=24):
         if z1 <= z0 or r_out <= r_in:
@@ -331,42 +379,76 @@ def build_top_cover():
     m.add_box(WALL, WALL + pillar_s, OUT_L - WALL - pillar_s, OUT_L - WALL, z_hold_bot, Z_TOP_IN)
     m.add_box(OUT_W - WALL - pillar_s, OUT_W - WALL, OUT_L - WALL - pillar_s, OUT_L - WALL, z_hold_bot, Z_TOP_IN)
 
-    # 6. MẶT TRÊN NẮP HỘP:
-    # - Khoét thông hoàn toàn vùng nút bấm (từ bx1=78.5mm cắt đứt ra tận mép phải OUT_W, không còn thanh che!)
-    # - Khoét khe cắm chân màn hình TFT1 sát mép dưới-phải
-    # - KHOÉT THÊM KHE LUỒN CHÂN & DÂY MÀN HÌNH ST7789 2.8" ngay dưới đáy khay màn hình (X=30..70mm, Y=7.5..19.0mm)!
+    # 6. MẶT TRÊN NẮP HỘP + 4 LỖ VÍT MÀN HÌNH TFT 2.8" (50.0 x 81.70 mm, tâm lỗ 44.60 x 76.00 mm):
+    # - Khoét thông hoàn toàn vùng nút bấm (X từ 78.5mm ra tận mép phải, Y từ 64.2 đến 89.5mm)
+    # - Khoét khe cắm TFT1 sát mép dưới-phải
+    # - Khoét khe luồn hàng 14 chân & dây Dupont màn hình 2.8" (X=30.2..66.5mm, Y=6.2..17.5mm)
     bx1 = pcb_x(BTN_OPEN_X1)
     tft_slot_x1 = pcb_x(84.5)
-    scr_wx0, scr_wx1 = pcb_x(30.0), pcb_x(70.0)
-    scr_wy0, scr_wy1 = pcb_y(7.5),  pcb_y(19.0)
+    scr_wx0, scr_wx1 = pcb_x(30.2), pcb_x(66.5)
+    scr_wy0, scr_wy1 = pcb_y(6.2),  pcb_y(17.5)
 
-    # Mảnh trái từ 0 -> scr_wx0 (kín toàn bộ chiều Y):
-    m.add_box(0, scr_wx0, 0, OUT_L, Z_TOP_IN, Z_TOTAL_H)
-    # Mảnh giữa từ scr_wx0 -> scr_wx1 (chừa khe luồn chân & dây ST7789 tại Y=7.5..19.0mm):
-    m.add_box(scr_wx0, scr_wx1, 0, scr_wy0, Z_TOP_IN, Z_TOTAL_H)
-    m.add_box(scr_wx0, scr_wx1, scr_wy1, OUT_L, Z_TOP_IN, Z_TOTAL_H)
-    # Mảnh từ scr_wx1 -> bx1 (kín toàn bộ chiều Y):
-    m.add_box(scr_wx1, bx1, 0, OUT_L, Z_TOP_IN, Z_TOTAL_H)
-    # Phần mặt nắp từ bx1 đến tft_slot_x1 (ngoài vùng nút bấm by1..by2):
-    m.add_box(bx1, tft_slot_x1, 0, by1, Z_TOP_IN, Z_TOTAL_H)
-    m.add_box(bx1, OUT_W, by2, OUT_L, Z_TOP_IN, Z_TOTAL_H)
-    # Phần sát mép phải (từ tft_slot_x1 đến OUT_W): kín ở đoạn giữa (t_y2..by1), hở tại khe cắm TFT1 (t_y1..t_y2) và hở hoàn toàn tại nút bấm (by1..by2)!
-    m.add_box(tft_slot_x1, OUT_W, 0, t_y1, Z_TOP_IN, Z_TOTAL_H)
-    m.add_box(tft_slot_x1, OUT_W, t_y2, by1, Z_TOP_IN, Z_TOTAL_H)
+    # Tọa độ 4 tâm lỗ vít của màn hình 2.8" V1.0 (50.0 x 81.70 mm):
+    # Đặt mép màn hình tại X=[23.5..73.5], Y=[6.5..88.2] -> Tâm lỗ: X=[26.2, 70.8], Y=[9.35, 85.35]
+    hx_L, hx_R = pcb_x(26.20), pcb_x(70.80)
+    hy_B, hy_T = pcb_y(9.35),  pcb_y(85.35)
+    hs = 3.3  # Nửa cạnh ô vuông chứa lỗ trụ Ø6.6mm (nằm gọn ngoài khe dây scr_wx0..scr_wx1)
 
-    # 7. KHUNG ĐẾ GÁ MÀN HÌNH TFT ST7789 2.8 INCH (Kích thước PCB chuẩn: 50.0 x 86.0 mm, lòng khay: 50.6 x 86.6 mm):
-    tft_x0, tft_x1 = pcb_x(23.9), pcb_x(74.5)   # Rộng 50.6 mm (cho màn ST7789 2.8" rộng 50.0 mm)
-    tft_y0, tft_y1 = pcb_y(5.4),  pcb_y(92.0)   # Dài 86.6 mm  (cho màn ST7789 2.8" dài 86.0 mm)
-    rw, rh, rl = 1.8, 2.4, 12.0
-    # 4 Gờ góc chữ L giữ chặt bo màn hình lớn ST7789 2.8 inch (50x86mm) trên mặt nắp hộp:
-    m.add_box(tft_x0 - rw, tft_x0, tft_y0 - rw, tft_y0 + rl, Z_TOTAL_H, Z_TOTAL_H + rh)
-    m.add_box(tft_x0 - rw, tft_x0 + rl, tft_y0 - rw, tft_y0, Z_TOTAL_H, Z_TOTAL_H + rh)
-    m.add_box(tft_x1, tft_x1 + rw, tft_y0 - rw, tft_y0 + rl, Z_TOTAL_H, Z_TOTAL_H + rh)
-    m.add_box(tft_x1 - rl, tft_x1 + rw, tft_y0 - rw, tft_y0, Z_TOTAL_H, Z_TOTAL_H + rh)
-    m.add_box(tft_x0 - rw, tft_x0, tft_y1 - rl, tft_y1 + rw, Z_TOTAL_H, Z_TOTAL_H + rh)
-    m.add_box(tft_x0 - rw, tft_x0 + rl, tft_y1, tft_y1 + rw, Z_TOTAL_H, Z_TOTAL_H + rh)
-    m.add_box(tft_x1, tft_x1 + rw, tft_y1 - rl, tft_y1 + rw, Z_TOTAL_H, Z_TOTAL_H + rh)
-    m.add_box(tft_x1 - rl, tft_x1 + rw, tft_y1, tft_y1 + rw, Z_TOTAL_H, Z_TOTAL_H + rh)
+    holes = [
+        (hx_L, hy_B),
+        (hx_R, hy_B),
+        (hx_L, hy_T),
+        (hx_R, hy_T),
+    ]
+
+    r_xs = sorted([
+        0.0,
+        hx_L - hs, hx_L + hs,
+        scr_wx0, scr_wx1,
+        hx_R - hs, hx_R + hs,
+        bx1, tft_slot_x1, OUT_W
+    ])
+    r_ys = sorted([
+        0.0,
+        t_y1, scr_wy0, hy_B - hs, hy_B + hs, scr_wy1,
+        t_y2, by1,
+        hy_T - hs, hy_T + hs,
+        by2, OUT_L
+    ])
+
+    for i in range(len(r_xs)-1):
+        for j in range(len(r_ys)-1):
+            cx0, cx1 = r_xs[i], r_xs[i+1]
+            cy0, cy1 = r_ys[j], r_ys[j+1]
+            if cx1 - cx0 < 1e-4 or cy1 - cy0 < 1e-4:
+                continue
+            xm, ym = 0.5*(cx0+cx1), 0.5*(cy0+cy1)
+
+            # Bỏ qua các ô khoét hở:
+            # 1) Vùng nút bấm RESET1/BOOT1 cắt đứt ra mép phải:
+            if xm >= bx1 and by1 <= ym <= by2:
+                continue
+            # 2) Khe mép phải sát chân TFT1:
+            if xm >= tft_slot_x1 and t_y1 <= ym <= t_y2:
+                continue
+            # 3) Khe luồn 14 chân & dây màn hình TFT 2.8" ngay dưới đầu header:
+            if scr_wx0 <= xm <= scr_wx1 and scr_wy0 <= ym <= scr_wy1:
+                continue
+            # 4) 4 Ô chứa lỗ bắt vít màn hình -> vẽ khối vuông có lỗ tròn Ø2.5mm xuyên trần nắp:
+            is_hole_cell = False
+            for hx, hy in holes:
+                if abs(xm - hx) < hs - 0.1 and abs(ym - hy) < hs - 0.1:
+                    is_hole_cell = True
+                    break
+            if is_hole_cell:
+                continue
+
+            m.add_box(cx0, cx1, cy0, cy1, Z_TOP_IN, Z_TOTAL_H)
+
+    # 7. VẼ 4 Ô LỖ XUYÊN TRẦN + 4 TRỤ ĐỠ VÍT MÀN HÌNH TFT 2.8" (CAO 3.5mm ĐỂ NÉ KHE THẺ SD & CHÂN HEADER MẶT LƯNG):
+    for hx, hy in holes:
+        m.add_square_with_hole(hx, hy, hs, 1.25, Z_TOP_IN, Z_TOTAL_H, segs=32)
+        m.add_cylinder(hx, hy, hs, 1.25, Z_TOTAL_H, Z_TOTAL_H + 3.5, segs=32)
 
     return m
 
@@ -441,12 +523,13 @@ def draw_pcb_on_ax(ax, z_offset=0.0):
     draw_mesh_on_ax(ax, btn_m, '#EF4444', alpha=0.98, edge_color='#FCA5A5', z_offset=z_offset)
 
 def draw_tft_on_ax(ax, z_offset=0.0):
-    # Màn hình ST7789 2.8 inch (PCB: 50.0 x 86.0 mm, Màn LCD hiển thị: 43.2 x 57.6 mm)
+    # Màn hình 2.8" V1.0 thật của người dùng (PCB: 50.0 x 81.70 mm, đặt trên 4 trụ vít cao 3.5mm)
+    tft_z0 = Z_TOTAL_H + 3.5
     tft_pcb = MeshBuilder()
-    tft_pcb.add_box(pcb_x(24.2), pcb_x(74.2), pcb_y(5.7), pcb_y(91.7), Z_TOTAL_H, Z_TOTAL_H+1.6)
+    tft_pcb.add_box(pcb_x(23.5), pcb_x(73.5), pcb_y(6.5), pcb_y(88.2), tft_z0, tft_z0+1.6)
     draw_mesh_on_ax(ax, tft_pcb, '#DC2626', alpha=0.92, edge_color='#FCA5A5', z_offset=z_offset)
     tft_lcd = MeshBuilder()
-    tft_lcd.add_box(pcb_x(26.5), pcb_x(71.9), pcb_y(16.0), pcb_y(81.0), Z_TOTAL_H+1.6, Z_TOTAL_H+3.4)
+    tft_lcd.add_box(pcb_x(25.8), pcb_x(71.2), pcb_y(16.0), pcb_y(78.5), tft_z0+1.6, tft_z0+3.4)
     draw_mesh_on_ax(ax, tft_lcd, '#090D16', alpha=0.95, edge_color='#38BDF8', z_offset=z_offset)
 
 # Góc nhìn 1: Phối cảnh Tách Lớp (Exploded Isometric View)
@@ -456,23 +539,23 @@ draw_pcb_on_ax(ax1, z_offset=10)
 draw_mesh_on_ax(ax1, top, '#F8FAFC', alpha=0.65, edge_color='#64748B', z_offset=24)
 draw_tft_on_ax(ax1, z_offset=32)
 ax1.view_init(elev=28, azim=-52)
-ax1.set_title("1. CƠ CẤU KHỚP LEGO + KHAY MÀN HÌNH LỚN ST7789 2.8 INCH (50x86mm)\nGầm dưới 5.5mm, khoảng trên 22.5mm + Khớp kẹp PCB chuẩn 0.12mm", color='white', fontsize=11.5, fontweight='bold', pad=10)
+ax1.set_title("1. HỘP 3D + 4 TRỤ VÍT MÀN HÌNH 2.8\" (50.0 × 81.70 mm)\nTâm 4 lỗ vít: 44.60 × 76.00 mm + Trụ cao 3.5mm né khay SD", color='white', fontsize=11.5, fontweight='bold', pad=10)
 
 # Góc nhìn 2: Đáy Hộp & Cắt Bỏ Vách Chắn Nút Nhấn
 ax2 = fig.add_subplot(2, 2, 2, projection='3d', facecolor='#0F172A')
 draw_mesh_on_ax(ax2, bot, '#38BDF8', alpha=0.85, edge_color='#0369A1', z_offset=0)
 draw_pcb_on_ax(ax2, z_offset=0)
 ax2.view_init(elev=38, azim=-35)
-ax2.set_title("2. ĐÁY HỘP ÔM KHÍT PCB (92.70 x 98.20 mm) & GỜ BẬC THANG 5.5mm\nTránh toàn bộ mối hàn mặt dưới + Hạ phẳng vách phải chỗ nút nhấn", color='white', fontsize=11.5, fontweight='bold', pad=10)
+ax2.set_title("2. ĐÁY HỘP ÔM KHÍT PCB (92.90 × 98.40 mm) & GỜ BẬC THANG 5.5mm\n4 Cửa sổ khóa chìm Snap-Fit chống gãy (biến dạng 0.67%)", color='white', fontsize=11.5, fontweight='bold', pad=10)
 
-# Góc nhìn 3: Mặt Trên Nắp Hộp (Đã cập nhật khay màn hình ST7789 2.8 inch)
+# Góc nhìn 3: Mặt Trên Nắp Hộp (4 lỗ bắt vít + khe luồn 14 chân)
 ax3 = fig.add_subplot(2, 2, 3, projection='3d', facecolor='#0F172A')
 draw_mesh_on_ax(ax3, bot, '#0284C7', alpha=0.45, edge_color='#0369A1', z_offset=0)
 draw_pcb_on_ax(ax3, z_offset=0)
 draw_mesh_on_ax(ax3, top, '#E2E8F0', alpha=0.88, edge_color='#475569', z_offset=0)
 draw_tft_on_ax(ax3, z_offset=0)
 ax3.view_init(elev=72, azim=-88)
-ax3.set_title("3. MẶT TRÊN VỚI KHAY GÁ MÀN HÌNH TFT ST7789 2.8 INCH (50.4 x 86.4 mm)\nKhông che lấp ô bấm nút RESET1/BOOT1 và khe cắm dây TFT1", color='white', fontsize=11.5, fontweight='bold', pad=10)
+ax3.set_title("3. MẶT TRÊN ĐỤC SẴN 4 LỖ BẮT VÍT M2.5/M3 CHO MÀN 50×81.7mm\nKèm khe luồn 14 chân cắm + Dây giấu gọn bên trong hộp", color='white', fontsize=11.5, fontweight='bold', pad=10)
 
 # Góc nhìn 4: Góc nhìn Cạnh Phải (Thấy rõ vùng nút bấm thông thoáng 100% + Khe TFT1/UART0)
 ax4 = fig.add_subplot(2, 2, 4, projection='3d', facecolor='#0F172A')
