@@ -221,11 +221,11 @@ def build_bottom_case():
     m.add_box(pcb_x(30.0), pcb_x(62.0), WALL, WALL + ledge_w, Z_FLOOR_TOP, Z_PCB_BOT)
 
     # 3. VÁCH TRƯỚC (Y = 0..WALL) + GỜ DƯƠNG LEGO + 2 CỬA SỔ KHÓA SNAP-FIT CHÌM (CHỐNG GÃY)
-    # 2 Cửa sổ chữ nhật tại X=[5..16] và [68..79] (rộng 11mm, cao 3.0mm: Z=14.4..17.4mm):
+    # 2 Cửa sổ chữ nhật tại X=[5..16] và [68..79] (rộng 11mm, cao 3.9mm: Z=13.5..17.4mm -> bao trọn vấu gài):
     f_win1 = (pcb_x(5.0), pcb_x(16.0))
     f_win2 = (pcb_x(68.0), pcb_x(79.0))
-    z_win_bot, z_win_top = 14.4, 17.4
-    lip_t = 0.95
+    z_win_bot, z_win_top = 13.5, 17.4
+    lip_t = 0.82
 
     f_spans = [
         (0.0,       f_win1[0], True),
@@ -294,18 +294,18 @@ def build_bottom_case():
 
 def build_top_cover():
     m = MeshBuilder()
-    lip_outer_x0 = WALL - 0.95 - SNAP_TOL  # Rãnh âm chụp ra ngoài gờ dương Lego (dung sai 0.12mm)
+    lip_outer_x0 = WALL - 0.82 - SNAP_TOL  # Rãnh âm chụp ra ngoài gờ dương Lego (dày 1.00mm, khe hở 0.18mm)
 
     # 1. VÁCH TRƯỚC NẮP HỘP + RÃNH ÂM LEGO + 2 LƯỠI GÀ SNAP-FIT DÀI 15.6mm (BIẾN DẠNG CHỈ 0.67% - BỀN VĨNH VIỄN TRÊN PLA)
     m.add_box(0, OUT_W, 0, WALL, Z_LIP_TOP, Z_TOP_IN)
     m.add_box(0, OUT_W, 0, lip_outer_x0, Z_SPLIT, Z_LIP_TOP)
     for tx0, tx1 in [(pcb_x(5.6), pcb_x(15.4)), (pcb_x(68.6), pcb_x(78.4))]:
-        # Lưỡi gà đàn hồi liền khối dài L=15.6mm (biến dạng chỉ 0.67%, không bao giờ gãy trên PLA):
+        # Lưỡi gà đàn hồi liền khối dài L=15.6mm (biến dạng chỉ 0.67%, nằm gọn 100% trong cửa sổ Z=13.5..17.4mm không cấn đáy):
         y_out, y_in, y_tooth = WALL + 0.12, WALL + 1.37, 1.25
-        m.add_frustum_y(tx0, tx1, y_out,   y_in, y_tooth, y_in, 13.7, 14.8)    # Mũi vát 38° dẫn hướng trượt êm vào khe
-        m.add_box(tx0, tx1, y_tooth, y_in, 14.8, 16.6)                        # Vấu gài ngậm sâu 0.75mm trong cửa sổ
-        m.add_frustum_y(tx0, tx1, y_tooth, y_in, y_out,   y_in, 16.6, 17.35)   # Vai khóa vát 48° (in 0-support & giữ chặt)
-        m.add_box(tx0, tx1, y_out,   y_in, 17.35, 29.8)                       # Thân lò xo đàn hồi dài 12.45mm
+        m.add_frustum_y(tx0, tx1, y_out,   y_in, y_tooth, y_in, 14.0, 14.9)    # Mũi vát 40° dẫn hướng trượt êm vào khe
+        m.add_box(tx0, tx1, y_tooth, y_in, 14.9, 16.5)                        # Vấu gài ngậm sâu 0.75mm trong cửa sổ
+        m.add_frustum_y(tx0, tx1, y_tooth, y_in, y_out,   y_in, 16.5, 17.25)   # Vai khóa vát 48° (chừa 0.15mm khe hở dưới cầu)
+        m.add_box(tx0, tx1, y_out,   y_in, 17.25, 29.8)                       # Thân lò xo đàn hồi dài 12.55mm
         m.add_frustum_y(tx0, tx1, y_out,   y_in, y_out, y_in + 1.0, 29.8, Z_TOP_IN) # Gân vát chân chống gãy gốc
 
     # 2. VÁCH SAU NẮP HỘP PHẲNG ĐẸP + RÃNH ÂM LEGO + 2 LƯỠI GÀ SNAP-FIT DÀI 15.6mm
@@ -313,10 +313,10 @@ def build_top_cover():
     m.add_box(0, OUT_W, OUT_L - lip_outer_x0, OUT_L, Z_SPLIT, Z_LIP_TOP)
     for tx0, tx1 in [(pcb_x(6.6), pcb_x(16.4)), (pcb_x(81.5), pcb_x(88.0))]:
         y_in, y_out, y_tooth = OUT_L - WALL - 1.37, OUT_L - WALL - 0.12, OUT_L - 1.25
-        m.add_frustum_y(tx0, tx1, y_in, y_out,   y_in,     y_tooth, 13.7, 14.8)
-        m.add_box(tx0, tx1, y_in, y_tooth, 14.8, 16.6)
-        m.add_frustum_y(tx0, tx1, y_in, y_tooth, y_in,     y_out,   16.6, 17.35)
-        m.add_box(tx0, tx1, y_in, y_out, 17.35, 29.8)
+        m.add_frustum_y(tx0, tx1, y_in, y_out,   y_in,     y_tooth, 14.0, 14.9)
+        m.add_box(tx0, tx1, y_in, y_tooth, 14.9, 16.5)
+        m.add_frustum_y(tx0, tx1, y_in, y_tooth, y_in,     y_out,   16.5, 17.25)
+        m.add_box(tx0, tx1, y_in, y_out, 17.25, 29.8)
         m.add_frustum_y(tx0, tx1, y_in, y_out,   y_in - 1.0, y_out, 29.8, Z_TOP_IN)
 
     # 3. VÁCH TRÁI NẮP HỘP - Mở hở toàn bộ dải giữa cho J4 & J5 (Y = 10.5 .. 81.5mm), chỉ giữ 2 trụ góc Trước-Trái & Sau-Trái!
