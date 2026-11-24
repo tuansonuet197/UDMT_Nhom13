@@ -98,6 +98,18 @@ namespace BTL_UDMT
         // Control Tab 3 (Nhật ký & Lưu trữ dữ liệu)
         private DataGridView dgvDataLog, dgvAlarmEvents;
         private Label lblSummaryKwh;
+        private const int MaxGridDisplayRows = 500;
+        private readonly List<DataLogEntry> _fullDataHistory = new List<DataLogEntry>();
+
+        private struct DataLogEntry
+        {
+            public DateTime Timestamp;
+            public double U;
+            public double I;
+            public double P;
+            public double Kwh;
+            public string Status;
+        }
 
         private class SmoothChartState
         {
@@ -957,11 +969,11 @@ namespace BTL_UDMT
 
             lblSummaryKwh = new Label
             {
-                Text = "ĐIỆN NĂNG TÍCH LŨY: 0.000 kWh   |   Tần số: 0 Hz",
-                Font = new Font("Segoe UI", 11.5F, FontStyle.Bold),
+                Text = "ĐIỆN NĂNG TÍCH LŨY: 0.000 kWh   |   Tần số: 0 Hz   |   Đã ghi: 0 mẫu",
+                Font = new Font("Segoe UI", 10.5F, FontStyle.Bold),
                 ForeColor = IsaTextPrimary,
                 AutoSize = true,
-                Location = new Point(14, 18)
+                Location = new Point(14, 19)
             };
 
             var btnExportCsv = CreateSolidButton("Xuất Báo Cáo CSV", IsaButtonNeutral, new Point(640, 11), new Size(185, 36));
@@ -970,7 +982,22 @@ namespace BTL_UDMT
 
             var btnClearLog = CreateOutlineButton("Xóa bảng Nhật ký", new Point(835, 11), new Size(140, 36));
             btnClearLog.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnClearLog.Click += (s, e) => { dgvDataLog.Rows.Clear(); dgvAlarmEvents.Rows.Clear(); };
+            btnClearLog.Click += (s, e) =>
+            {
+                if (_fullDataHistory.Count > 0)
+                {
+                    var confirm = MessageBox.Show(
+                        $"Xóa toàn bộ {_fullDataHistory.Count:N0} bản ghi đã lưu trong phiên đo hiện tại?",
+                        "Xác nhận xóa nhật ký",
+                        MessageBoxButtons.YesNo,
+                        MessageBoxIcon.Question);
+                    if (confirm != DialogResult.Yes) return;
+                }
+                _fullDataHistory.Clear();
+                dgvDataLog.Rows.Clear();
+                dgvAlarmEvents.Rows.Clear();
+                lblSummaryKwh.Text = $"ĐIỆN NĂNG TÍCH LŨY: {_valKwh:F3} kWh   |   Tần số: {(_lastU > 50 ? 50 : 0)} Hz   |   Đã ghi: 0 mẫu";
+            };
 
             pnlTopSummary.Controls.AddRange(new Control[] { lblSummaryKwh, btnExportCsv, btnClearLog });
 
@@ -1334,22 +1361,41 @@ namespace BTL_UDMT
             bool faulted = EvaluateThresholds(u, i, p, kwh, out string status);
 
             // 3. Cập nhật đồng thời cả 4 đồ thị U, I, P, kWh
-            string timeLabel = DateTime.Now.ToString("HH:mm:ss");
+            DateTime now = DateTime.Now;
+            string timeLabel = now.ToString("HH:mm:ss");
+            string gridTimeLabel = now.ToString("HH:mm:ss.fff");
             AppendChartPoint(chartU, timeLabel, u);
             AppendChartPoint(chartI, timeLabel, i);
             AppendChartPoint(chartP, timeLabel, p);
             AppendChartPoint(chartKwh, timeLabel, kwh);
 
-            // 4. Cập nhật Tab 3 (Nhật ký & Lưu trữ dữ liệu)
-            lblSummaryKwh.Text = $"ĐIỆN NĂNG TÍCH LŨY: {kwh:F3} kWh   |   Tần số: {(u > 50 ? 50 : 0)} Hz";
+            // 4. Lưu đầy đủ toàn bộ phiên đo vào bộ nhớ để xuất CSV không bị mất mẫu
+            _fullDataHistory.Add(new DataLogEntry
+            {
+                Timestamp = now,
+                U = u,
+                I = i,
+                P = p,
+                Kwh = kwh,
+                Status = status
+            });
 
-            int rowIdx = dgvDataLog.Rows.Add(timeLabel, u.ToString("F1"), i.ToString("F2"), p.ToString("F1"), kwh.ToString("F3"), status);
+            // 5. Cập nhật Tab 3 (Nhật ký & Lưu trữ dữ liệu) — bảng chỉ giữ tối đa 500 dòng gần nhất để giao diện mượt
+            lblSummaryKwh.Text = $"ĐIỆN NĂNG TÍCH LŨY: {kwh:F3} kWh   |   Tần số: {(u > 50 ? 50 : 0)} Hz   |   Đã ghi: {_fullDataHistory.Count:N0} mẫu";
+
+            int rowIdx = dgvDataLog.Rows.Add(
+                gridTimeLabel,
+                u.ToString("F1", CultureInfo.InvariantCulture),
+                i.ToString("F2", CultureInfo.InvariantCulture),
+                p.ToString("F1", CultureInfo.InvariantCulture),
+                kwh.ToString("F3", CultureInfo.InvariantCulture),
+                status);
             if (faulted)
             {
                 dgvDataLog.Rows[rowIdx].DefaultCellStyle.BackColor = Color.FromArgb(254, 226, 226);
                 dgvDataLog.Rows[rowIdx].DefaultCellStyle.ForeColor = IsaAlarmRed;
             }
-            if (dgvDataLog.Rows.Count > 200) dgvDataLog.Rows.RemoveAt(0);
+            if (dgvDataLog.Rows.Count > MaxGridDisplayRows) dgvDataLog.Rows.RemoveAt(0);
             if (dgvDataLog.Rows.Count > 0) dgvDataLog.FirstDisplayedScrollingRowIndex = dgvDataLog.Rows.Count - 1;
         }
 
@@ -1431,9 +1477,9 @@ namespace BTL_UDMT
 
         private void BtnExportCsv_Click(object sender, EventArgs e)
         {
-            if (dgvDataLog.Rows.Count == 0)
+            if (_fullDataHistory.Count == 0)
             {
-                MessageBox.Show("Chưa có dữ liệu trong bảng Nhật ký để xuất file!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Chưa có dữ liệu đo để xuất file!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
@@ -1441,13 +1487,23 @@ namespace BTL_UDMT
             {
                 if (sfd.ShowDialog() == DialogResult.OK)
                 {
+                    // Chụp bản sao toàn bộ lịch sử tại thời điểm nhấn Lưu để tránh xung đột khi UART vẫn đang nhận
+                    var snapshot = new List<DataLogEntry>(_fullDataHistory);
                     using (var sw = new StreamWriter(sfd.FileName, false, new UTF8Encoding(true)))
                     {
                         sw.WriteLine("Thoi Gian,Dien Ap (V),Dong Dien (A),Cong Suat (W),Dien Nang (kWh),Trang Thai");
-                        foreach (DataGridViewRow r in dgvDataLog.Rows)
-                            sw.WriteLine($"{r.Cells[0].Value},{r.Cells[1].Value},{r.Cells[2].Value},{r.Cells[3].Value},{r.Cells[4].Value},\"{r.Cells[5].Value}\"");
+                        foreach (var entry in snapshot)
+                        {
+                            string ts = entry.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
+                            string uStr = entry.U.ToString("F1", CultureInfo.InvariantCulture);
+                            string iStr = entry.I.ToString("F2", CultureInfo.InvariantCulture);
+                            string pStr = entry.P.ToString("F1", CultureInfo.InvariantCulture);
+                            string kwhStr = entry.Kwh.ToString("F3", CultureInfo.InvariantCulture);
+                            string st = (entry.Status ?? "").Replace("\"", "\"\"");
+                            sw.WriteLine($"{ts},{uStr},{iStr},{pStr},{kwhStr},\"{st}\"");
+                        }
                     }
-                    MessageBox.Show("Đã xuất file báo cáo CSV thành công!", "Hoàn tất", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show($"Đã xuất đầy đủ {snapshot.Count:N0} bản ghi ra file CSV thành công!", "Hoàn tất", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
         }
