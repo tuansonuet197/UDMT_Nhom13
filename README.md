@@ -28,8 +28,12 @@ UDMT_Nhom13/
 │   ├── App_ChayNgay/           # Bản Release bấm chạy trực tiếp (BTL_UDMT.exe)
 │   ├── SourceCode/             # Mã nguồn đầy đủ mở bằng Visual Studio (BTL_UDMT.sln)
 │   └── README.txt              # Hướng dẫn chạy nhanh & kết nối UART
-└── docs/images/                # Ảnh minh họa sản phẩm, sơ đồ nguyên lý, PCB và giao diện HMI
+└── docs/
+    ├── EMA3071E_2_Nhom13_BaoCao.pdf  # Báo cáo cuối kỳ hoàn chỉnh (28 trang)
+    └── images/                       # Ảnh minh họa sản phẩm, sơ đồ nguyên lý, PCB và giao diện HMI
 ```
+
+> 📄 **Báo cáo cuối kỳ (PDF):** [EMA3071E_2_Nhom13_BaoCao.pdf](docs/EMA3071E_2_Nhom13_BaoCao.pdf)
 
 ---
 
@@ -53,7 +57,7 @@ Mạch in 2 lớp kích thước **`92.40 × 97.90 mm`** (dày `1.60 mm`), tách
 Phần mềm viết bằng **C# WinForms (.NET Framework 4.7.2)** theo chuẩn giao diện công nghiệp **ANSI/ISA-101** (nền trung tính, màu đỏ dành riêng cho báo động) và quản lý cảnh báo 4 trạng thái **ANSI/ISA-18.2** (`NORMAL` → `UNACK ALARM` → `ACKED ACTIVE` → `CLEARED`).
 
 - **Chạy ngay không cần cài đặt:** Mở thư mục `Software_SCADA_HMI/App_ChayNgay/` và nhấp đúp **`BTL_UDMT.exe`**.
-- **Giao tiếp 1 chiều từ ESP32-S3 lên PC:** Nhận chuỗi ASCII qua `UART0` (`115200 bps, 8N1`) theo định dạng `DATA,<U>,<I>,<P>,<CosPhi>,<kWh>\n` (chu kỳ `500 ms`), không gửi lệnh ngược xuống mạch.
+- **Giao tiếp 1 chiều từ ESP32-S3 lên PC:** Nhận chuỗi ASCII qua `UART0` (`115200 bps, 8N1`) theo định dạng `DATA,<U>,<I>,<P>,<CosPhi>,<kWh>\n` (chu kỳ `200 ms`), không gửi lệnh ngược xuống mạch.
 - **Bố cục 3 Tab đồng bộ tiếng Việt:**
   1. **Giám sát tổng quan:** Hiển thị đồng thời 4 thẻ thông số (`Điện áp V`, `Dòng điện A`, `Công suất W`, `Điện năng kWh`) kèm 1 đồ thị thời gian thực rộng toàn chiều ngang (bấm vào thẻ để chuyển kênh đồ thị, khóa trục tung không âm, hiển thị đường ngưỡng `StripLines`, hỗ trợ Zoom/Pan mượt).
   2. **Cấu hình ngưỡng:** Cài đặt tập trung toàn bộ 5 ngưỡng bảo vệ cục bộ trên PC (`Umin`, `Umax`, `Imax`, `Pmax`, `Emax`).
@@ -68,7 +72,10 @@ Phần mềm viết bằng **C# WinForms (.NET Framework 4.7.2)** theo chuẩn g
 
 ## 3. Firmware nhúng ESP32-S3 (`Firmware/`)
 
-Mã nguồn nhúng trong `Firmware/electrical_meansurement/` xây dựng cho **ESP32-S3-WROOM-1**, đọc khung dữ liệu 24 byte từ `HLW8032` (`UART1`, `4800 bps 8E1`, chu kỳ `50 ms`), kiểm tra Checksum, hiển thị giao diện đồ họa LVGL lên màn hình màu TFT `2.8"` (SPI) và truyền chuỗi dữ liệu đo lên máy tính qua `UART0` (`115200 bps 8N1`).
+Mã nguồn nhúng trong `Firmware/electrical_meansurement/` xây dựng trên nền **ESP-IDF + FreeRTOS** (4 tác vụ song song) cho **ESP32-S3-WROOM-1**:
+- **`data_screen.c` (`hlw8032`, Priority 5):** Thu khung 24 byte từ `HLW8032` (`UART1`, `4800 bps 8E1`), đồng bộ cửa sổ trượt, kiểm tra Checksum, hiệu chuẩn offset điểm 0 trong `2 s` đầu, cắt vùng chết `0.1 A`, tích phân điện năng `kWh` và lưu bền vững vào **NVS Flash** (mỗi `60 s` hoặc khi tăng `>= 0.001 kWh`).
+- **`data_pc.c` (`data_pc`, Priority 4):** Đóng gói bản tin ASCII `DATA,U,I,P,CosPhi,kWh\n` gửi lên máy tính qua `UART0` (`115200 bps 8N1`, chu kỳ `200 ms`).
+- **`ui_control.c` (`lvgl`, Priority 4) & `boot_btn` (Priority 3):** Cập nhật giao diện đồ họa LVGL lên màn hình màu TFT `ILI9341` `2.8"` (`320×240`, SPI2 `40 MHz` DMA, chu kỳ `200 ms`) và hỗ trợ giữ nút `BOOT (GPIO0)` `3 s` để xóa NVS đặt lại `kWh = 0`.
 
 ---
 
