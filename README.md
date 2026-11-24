@@ -29,7 +29,7 @@ UDMT_Nhom13/
 │   ├── SourceCode/             # Mã nguồn đầy đủ mở bằng Visual Studio (BTL_UDMT.sln)
 │   └── README.txt              # Hướng dẫn chạy nhanh & kết nối UART
 └── docs/
-    ├── EMA3071E_2_Nhom13_BaoCao.pdf  # Báo cáo cuối kỳ hoàn chỉnh (30 trang)
+    ├── EMA3071E_2_Nhom13_BaoCao.pdf  # Báo cáo cuối kỳ hoàn chỉnh (31 trang)
     └── images/                       # Ảnh minh họa sản phẩm, sơ đồ nguyên lý, PCB và giao diện HMI
 ```
 
