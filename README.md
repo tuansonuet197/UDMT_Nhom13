@@ -3,7 +3,7 @@
 - **Trường:** Đại học Công nghệ – ĐHQGHN (UET)
 - **Môn học:** Ứng dụng máy tính trong đo lường và điều khiển (`EMA3071E 2`)
 - **Giảng viên hướng dẫn:** TS. Hoàng Văn Mạnh
-- **Phạm vi đo mục tiêu:** Lưới xoay chiều một pha `85 ÷ 260 VAC (50 Hz)`, dải dòng `0.5 ÷ 10 A` (`100 ÷ 2200 W`, chuyên đo phụ tải công suất vừa và lớn)
+- **Phạm vi đo mục tiêu:** Lưới xoay chiều một pha `220 VAC ± 10% (50 Hz)`, dải dòng `0.5 ÷ 10 A` (`100 ÷ 2200 W`, chuyên đo phụ tải công suất vừa và lớn)
 - **Phần cứng chính:** IC đo điện năng `HLW8032` + Shunt `1 mΩ` + Opto cách ly quang `SFH617A-2` + Nguồn cách ly `HLK-10M05` + `AMS1117-3.3` + `ESP32-S3-WROOM-1` (`92.40 × 97.90 mm`) + Màn hình TFT **2.8" 240×320**
 
 ## Thành viên Nhóm 13
